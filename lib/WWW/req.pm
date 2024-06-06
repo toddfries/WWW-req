@@ -28,15 +28,36 @@ sub get {
 	my ($me, $call) = @_;
 
 	if (!defined($me->{ua})) {
-		$me->{ua} = LWP::UserAgent->new;
-		$me->{ua}->env_proxy();
-		$me->{ua}->timeout(60);
-		$me->setup_ua_creds;
+		$me->initua();
 	}
 
 	my $url = $me->urlbase().$call;
 
 	my $req = HTTP::Request->new(GET => $url);
+
+	if (!defined($req)) {
+		return "EINVAL URL: $url";
+	}
+
+	my $res = $me->{ua}->request( $req );
+
+	if (!defined($res)) {
+		return "EBADF result URL='$url'";
+	}
+
+	return $me->parse_json( $res, $me->json_name);
+}
+
+sub delete {
+	my ($me, $call) = @_;
+
+	if (!defined($me->{ua})) {
+		$me->initua();
+	}
+
+	my $url = $me->urlbase().$call;
+
+	my $req = HTTP::Request->new(DELETE => $url);
 
 	if (!defined($req)) {
 		return "EINVAL URL: $url";
@@ -58,10 +79,7 @@ sub post {
 	}
 
 	if (!defined($me->{ua})) {
-		$me->{ua} = LWP::UserAgent->new;
-		$me->{ua}->env_proxy();
-		$me->{ua}->timeout(60);
-		$me->setup_ua_creds;
+		$me->initua();
 	}
 
 	my $req;
@@ -126,6 +144,14 @@ sub parse_json {
 ));
 	}
 	return $parsed;
+}
+
+sub initua {
+	my ($me) = @_;
+	$me->{ua} = LWP::UserAgent->new;
+	$me->{ua}->env_proxy();
+	$me->{ua}->timeout(60);
+	$me->setup_ua_creds;
 }
 
 1;
